@@ -6,8 +6,8 @@ import (
 	"os"
 	"time"
 
-	"go.mongodb.org/mongo-driver/v2/mongo"
-	"go.mongodb.org/mongo-driver/v2/mongo/options"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 var MongoDB *mongo.Client
@@ -22,8 +22,8 @@ func InitMongoDB() error {
 		mongoURI = "mongodb://localhost:27017"
 	}
 
-	// Use Connect function with context and URI
-	client, err := mongo.Connect(options.Client().ApplyURI(mongoURI))
+	// Use Connect function with context and URI (v1 API)
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(mongoURI))
 	if err != nil {
 		return fmt.Errorf("failed to create mongo client: %w", err)
 	}

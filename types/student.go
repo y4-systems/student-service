@@ -1,6 +1,6 @@
 package types
 
-import "go.mongodb.org/mongo-driver/v2/bson"
+import "go.mongodb.org/mongo-driver/bson/primitive"
 
 // RegisterRequest represents the student registration request
 type RegisterRequest struct {
@@ -20,7 +20,7 @@ type RegisterResponse struct {
 
 // Student represents a student in MongoDB
 type Student struct {
-	ID       bson.ObjectID `bson:"_id,omitempty" json:"id"`
+	ID       primitive.ObjectID `bson:"_id,omitempty" json:"id"`
 	Email    string        `bson:"email" json:"email"`
 	Password string        `bson:"password" json:"password"`
 	Name     string        `bson:"name" json:"name"`

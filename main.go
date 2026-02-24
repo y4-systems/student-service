@@ -7,13 +7,16 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
+	"reflect"
 
 	"github.com/joho/godotenv"
 	"github.com/y4-systems/student-service/config"
 	"github.com/y4-systems/student-service/types"
-	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	_ "github.com/y4-systems/student-service/docs"
 )
 
@@ -39,9 +42,8 @@ func main() {
 	// Setup routes with CORS middleware
 	mux := http.NewServeMux()
 	mux.HandleFunc("/swagger.json", swaggerJSONHandler)
+	mux.HandleFunc("/students/", studentsHandler)
 	mux.HandleFunc("/auth/register", registerHandler)
-	// Serve a lightweight Swagger UI that always loads the swagger JSON from the same origin.
-	// This avoids hard-coded hosts and works behind proxies (Codespaces, ngrok, etc.).
 	mux.HandleFunc("/swagger/index.html", swaggerUIHandler)
 	mux.HandleFunc("/swagger/", func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/swagger/index.html", http.StatusFound)
@@ -102,31 +104,24 @@ func corsMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-// swaggerJSONHandler serves the swagger.json with the correct host
+// swaggerJSONHandler serves a minimal dynamic swagger JSON
 func swaggerJSONHandler(w http.ResponseWriter, r *http.Request) {
-	// Prefer X-Forwarded headers when behind a proxy (Codespaces, ngrok, etc.)
-	host := r.Header.Get("X-Forwarded-Host")
-	if host == "" {
-		host = r.Host
-	}
-
 	proto := r.Header.Get("X-Forwarded-Proto")
 	schemes := "[\n        \"http\",\n        \"https\"\n    ]"
 	if proto != "" {
-		// use only the forwarded proto to avoid mixed-scheme CORS issues
 		schemes = fmt.Sprintf("[\n        \"%s\"\n    ]", proto)
 	}
 
 	swaggerJSON := fmt.Sprintf(`{
-	"schemes": %s,
-	"swagger": "2.0",
+    "schemes": %s,
+    "swagger": "2.0",
     "info": {
         "description": "A simple student management API with MongoDB",
         "title": "Student Service API",
         "contact": {},
         "version": "1.0"
     },
-	"basePath": "/",
+    "basePath": "/",
     "paths": {
         "/auth/register": {
             "post": {
@@ -137,9 +132,7 @@ func swaggerJSONHandler(w http.ResponseWriter, r *http.Request) {
                 "produces": [
                     "application/json"
                 ],
-                "tags": [
-                    "Auth"
-                ],
+                "tags": ["Auth"],
                 "summary": "Register a new student",
                 "parameters": [
                     {
@@ -147,77 +140,60 @@ func swaggerJSONHandler(w http.ResponseWriter, r *http.Request) {
                         "name": "registerRequest",
                         "in": "body",
                         "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/RegisterRequest"
-                        }
+                        "schema": {"$ref": "#/definitions/RegisterRequest"}
                     }
                 ],
                 "responses": {
-                    "201": {
-                        "description": "Created",
-                        "schema": {
-                            "$ref": "#/definitions/RegisterResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/ErrorResponse"
-                        }
-                    }
+                    "201": {"description": "Created", "schema": {"$ref": "#/definitions/RegisterResponse"}},
+                    "400": {"description": "Bad Request", "schema": {"$ref": "#/definitions/ErrorResponse"}},
+                    "500": {"description": "Internal Server Error", "schema": {"$ref": "#/definitions/ErrorResponse"}}
+                }
+            }
+        },
+        "/students/{id}": {
+            "get": {
+                "description": "Get student by ID",
+                "produces": ["application/json"],
+                "tags": ["Students"],
+                "summary": "Get student by ID",
+				"parameters": [
+					{"name": "id", "in": "path", "required": true, "type": "string", "description": "Student ID", "default": "699df7593e8c1131b613628d"}
+				],
+                "responses": {
+                    "200": {"description": "OK", "schema": {"$ref": "#/definitions/RegisterResponse"}},
+                    "400": {"description": "Bad Request", "schema": {"$ref": "#/definitions/ErrorResponse"}},
+                    "404": {"description": "Not Found", "schema": {"$ref": "#/definitions/ErrorResponse"}}
                 }
             }
         }
     },
     "definitions": {
         "RegisterRequest": {
-            "type": "object",
-            "properties": {
-                "email": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "password": {
-                    "type": "string"
-                },
-                "phone": {
-                    "type": "string"
-                }
-            }
+			"type": "object",
+			"required": ["email", "name", "password", "phone"],
+			"properties": {
+				"email": {"type": "string", "example": "student@example.com"},
+				"name": {"type": "string", "example": "John Doe"},
+				"password": {"type": "string", "minLength": 6, "example": "password123"},
+				"phone": {"type": "string", "example": "1234567890"}
+			},
+			"example": {
+				"email": "student@example.com",
+				"password": "password123",
+				"name": "John Doe",
+				"phone": "1234567890"
+			}
         },
         "RegisterResponse": {
             "type": "object",
             "properties": {
-                "email": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "phone": {
-                    "type": "string"
-                }
+                "email": {"type": "string"},
+                "id": {"type": "string"},
+                "name": {"type": "string"},
+                "phone": {"type": "string"}
             }
         },
-        "ErrorResponse": {
-            "type": "object",
-            "properties": {
-                "error": {
-                    "type": "string"
-                }
-            }
-        }
+        "ErrorResponse": {"type": "object", "properties": {"error": {"type": "string"}}}
     }
 }`, schemes)
 
@@ -227,32 +203,109 @@ func swaggerJSONHandler(w http.ResponseWriter, r *http.Request) {
 
 // swaggerUIHandler serves a minimal Swagger UI that loads /swagger.json from same origin
 func swaggerUIHandler(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		html := `<!doctype html>
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	html := `<!doctype html>
 <html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<meta name="viewport" content="width=device-width, initial-scale=1" />
-		<title>Swagger UI</title>
-		<link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist/swagger-ui.css" />
-	</head>
-	<body>
-		<div id="swagger-ui"></div>
-		<script src="https://unpkg.com/swagger-ui-dist/swagger-ui-bundle.js"></script>
-		<script>
-			window.onload = function() {
-				const ui = SwaggerUIBundle({
-					url: window.location.origin + '/swagger.json',
-					dom_id: '#swagger-ui',
-					deepLinking: true,
-					presets: [SwaggerUIBundle.presets.apis],
-				})
-				window.ui = ui
-			}
-		</script>
-	</body>
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Swagger UI</title>
+        <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist/swagger-ui.css" />
+    </head>
+    <body>
+        <div id="swagger-ui"></div>
+        <script src="https://unpkg.com/swagger-ui-dist/swagger-ui-bundle.js"></script>
+        <script>
+            window.onload = function() {
+                const ui = SwaggerUIBundle({
+                    url: window.location.origin + '/swagger.json',
+                    dom_id: '#swagger-ui',
+                    deepLinking: true,
+                    presets: [SwaggerUIBundle.presets.apis],
+                })
+                window.ui = ui
+            }
+        </script>
+    </body>
 </html>`
-		w.Write([]byte(html))
+	w.Write([]byte(html))
+}
+
+// objectIDToHex attempts to extract a hex string from different ObjectID types
+func objectIDToHex(id interface{}) string {
+	if id == nil {
+		return ""
+	}
+	// try common concrete types
+	if v, ok := id.(primitive.ObjectID); ok {
+		return v.Hex()
+	}
+	// fallback: use reflection to call Hex() if available
+	rv := reflect.ValueOf(id)
+	m := rv.MethodByName("Hex")
+	if m.IsValid() {
+		res := m.Call(nil)
+		if len(res) == 1 {
+			if s, ok := res[0].Interface().(string); ok {
+				return s
+			}
+		}
+	}
+	// last resort: use fmt
+	return fmt.Sprintf("%v", id)
+}
+
+// getStudentHandler returns a student by ID
+func getStudentHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		json.NewEncoder(w).Encode(types.ErrorResponse{Error: "Method Not Allowed"})
+		return
+	}
+
+	// extract id from path /students/{id}
+	id := strings.TrimPrefix(r.URL.Path, "/students/")
+	if id == "" {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(types.ErrorResponse{Error: "Missing student id"})
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	// parse hex id
+	oid, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(types.ErrorResponse{Error: "Invalid id format"})
+		return
+	}
+
+	collection := config.GetDB().Collection("students")
+	var student types.Student
+	err = collection.FindOne(ctx, bson.M{"_id": oid}).Decode(&student)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		json.NewEncoder(w).Encode(types.ErrorResponse{Error: "Student not found"})
+		return
+	}
+
+	// prepare response
+	resp := types.RegisterResponse{
+		ID:    student.ID.Hex(),
+		Email: student.Email,
+		Name:  student.Name,
+		Phone: student.Phone,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(resp)
 }
 
 // registerHandler godoc
@@ -311,10 +364,10 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Return response with inserted ID
-	objID := result.InsertedID.(bson.ObjectID)
+	// Return response with inserted ID (handle multiple possible ID types)
+	idHex := objectIDToHex(result.InsertedID)
 	response := types.RegisterResponse{
-		ID:    objID.Hex(),
+		ID:    idHex,
 		Email: req.Email,
 		Name:  req.Name,
 		Phone: req.Phone,
