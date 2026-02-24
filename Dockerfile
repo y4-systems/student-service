@@ -18,6 +18,8 @@ RUN apk add --no-cache ca-certificates
 
 WORKDIR /app
 COPY --from=builder /app/student-service /app/student-service
+# Include API docs and optional .env from the build context so the runtime image can serve /docs
+COPY --from=builder /src/docs /app/docs
 
 ENV SERVER_PORT=8080
 EXPOSE 8080

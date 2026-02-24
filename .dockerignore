@@ -5,6 +5,7 @@
 **/*.log
 **/*.cache
 **/server.log
+**/.env
 Dockerfile
 .dockerignore
 bin/
