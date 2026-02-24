@@ -1,0 +1,17 @@
+**/.git
+**/.github
+**/node_modules
+**/vendor
+**/*.log
+**/*.cache
+**/server.log
+Dockerfile
+.dockerignore
+bin/
+*.exe
+*.dll
+*.so
+*.dylib
+_output
+testdata
+coverage.out

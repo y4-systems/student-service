@@ -1,0 +1,28 @@
+FROM golang:1.21-alpine AS builder
+
+WORKDIR /src
+
+ENV CGO_ENABLED=0 GOOS=linux GOARCH=amd64
+
+# cache deps
+COPY go.mod go.sum ./
+RUN go mod download
+
+COPY . .
+
+# build static binary
+RUN go build -ldflags="-s -w" -o /app/student-service .
+
+FROM alpine:3.18
+RUN apk add --no-cache ca-certificates
+
+WORKDIR /app
+COPY --from=builder /app/student-service /app/student-service
+
+ENV SERVER_PORT=8080
+EXPOSE 8080
+
+# non-root user
+USER 1000:1000
+
+CMD ["/app/student-service"]
