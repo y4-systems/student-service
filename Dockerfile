@@ -10,6 +10,10 @@ RUN go mod download
 
 COPY . .
 
+# generate swagger docs
+RUN go install github.com/swaggo/swag/cmd/swag@latest && \
+    swag init
+
 # build static binary
 RUN go build -ldflags="-s -w" -o /app/student-service .
 
