@@ -18,6 +18,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"golang.org/x/crypto/bcrypt"
+	"golang.org/x/time/rate"
 	_ "github.com/y4-systems/student-service/docs"
 )
 
@@ -26,6 +27,9 @@ import (
 // @description A simple student management API with MongoDB
 // @BasePath /
 // @schemes http https
+
+// Global rate limiter for login endpoint
+var loginRateLimiter *IPRateLimiter
 
 func main() {
 	// Load environment variables from .env file
@@ -40,6 +44,12 @@ func main() {
 	}
 	fmt.Println("Successfully connected to MongoDB")
 
+	// Initialize rate limiter: 5 requests per minute per IP
+	loginRateLimiter = NewIPRateLimiter(rate.Every(time.Minute/5), 1)
+	// Cleanup old entries every hour to prevent memory leaks
+	loginRateLimiter.CleanupOldEntries(time.Hour)
+	fmt.Println("Rate limiter initialized: 5 login attempts per minute per IP")
+
 	// Setup routes with CORS middleware
 	mux := http.NewServeMux()
 	// Serve documentation files from ./docs at /docs/
@@ -47,7 +57,7 @@ func main() {
 	mux.HandleFunc("/swagger.json", swaggerJSONHandler)
 	mux.HandleFunc("/students/", protectedMiddleware(studentsHandler))
 	mux.HandleFunc("/auth/register", registerHandler)
-	mux.HandleFunc("/auth/login", loginHandler)
+	mux.HandleFunc("/auth/login", rateLimitMiddleware(loginHandler))
 	mux.HandleFunc("/auth/validate", protectedMiddleware(validateHandler))
 	mux.HandleFunc("/swagger/index.html", swaggerUIHandler)
 	mux.HandleFunc("/swagger/", func(w http.ResponseWriter, r *http.Request) {
@@ -141,6 +151,30 @@ func protectedMiddleware(next http.HandlerFunc) http.HandlerFunc {
 		ctx = context.WithValue(ctx, "user", claims)
 		r = r.WithContext(ctx)
 
+		next(w, r)
+	}
+}
+
+// rateLimitMiddleware wraps a handler with rate limiting
+func rateLimitMiddleware(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// Get client IP address
+		ip := GetIPAddress(r)
+		
+		// Get rate limiter for this IP
+		limiter := loginRateLimiter.GetLimiter(ip)
+		
+		// Check if request is allowed
+		if !limiter.Allow() {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusTooManyRequests)
+			json.NewEncoder(w).Encode(types.ErrorResponse{
+				Error: "Too many login attempts. Please try again later.",
+			})
+			return
+		}
+		
+		// Request is allowed, proceed to next handler
 		next(w, r)
 	}
 }

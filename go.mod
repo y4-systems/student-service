@@ -1,6 +1,6 @@
 module github.com/y4-systems/student-service
 
-go 1.21
+go 1.24.0
 
 require (
 	github.com/golang-jwt/jwt/v5 v5.2.0
@@ -8,6 +8,7 @@ require (
 	github.com/swaggo/swag v1.16.6
 	go.mongodb.org/mongo-driver v1.17.9
 	golang.org/x/crypto v0.33.0
+	golang.org/x/time v0.14.0
 )
 
 require (
