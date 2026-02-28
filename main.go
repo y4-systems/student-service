@@ -17,6 +17,7 @@ import (
 	"github.com/y4-systems/student-service/types"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"golang.org/x/crypto/bcrypt"
 	_ "github.com/y4-systems/student-service/docs"
 )
 
@@ -496,7 +497,15 @@ func studentsHandler(w http.ResponseWriter, r *http.Request) {
 
 		update := bson.M{"$set": bson.M{"email": req.Email, "name": req.Name, "phone": req.Phone}}
 		if req.Password != "" {
-			update["$set"].(bson.M)["password"] = req.Password
+			// Hash the new password before storing
+			hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+			if err != nil {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusInternalServerError)
+				json.NewEncoder(w).Encode(types.ErrorResponse{Error: "Failed to process password"})
+				return
+			}
+			update["$set"].(bson.M)["password"] = string(hashedPassword)
 		}
 
 		res, err := collection.UpdateOne(ctx, bson.M{"_id": oid}, update)
@@ -585,10 +594,19 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Hash password using bcrypt
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(types.ErrorResponse{Error: "Failed to process password"})
+		return
+	}
+
 	// Create student object
 	student := types.Student{
 		Email:    req.Email,
-		Password: req.Password,
+		Password: string(hashedPassword),
 		Name:     req.Name,
 		Phone:    req.Phone,
 	}
@@ -670,8 +688,9 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Verify password (simple string comparison - in production, use bcrypt)
-	if student.Password != req.Password {
+	// Verify password using bcrypt
+	err = bcrypt.CompareHashAndPassword([]byte(student.Password), []byte(req.Password))
+	if err != nil {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusUnauthorized)
 		json.NewEncoder(w).Encode(types.ErrorResponse{Error: "Invalid email or password"})
