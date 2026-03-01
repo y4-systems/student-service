@@ -333,6 +333,25 @@ func swaggerJSONHandler(w http.ResponseWriter, r *http.Request) {
 					"500": {"description": "Internal Server Error", "schema": {"$ref": "#/definitions/ErrorResponse"}}
 				}
 			}
+		},
+		"/students/{id}/enrollments": {
+			"get": {
+				"description": "Get student with course enrollments from Enrollment Service",
+				"produces": ["application/json"],
+				"tags": ["Students", "Microservice Integration"],
+				"summary": "Get student with enrollments",
+				"security": [{"BearerAuth": []}],
+				"parameters": [
+					{"name": "id", "in": "path", "required": true, "type": "string", "description": "Student ID", "default": "699df7593e8c1131b613628d"}
+				],
+				"responses": {
+					"200": {"description": "OK", "schema": {"$ref": "#/definitions/StudentWithEnrollments"}},
+					"400": {"description": "Bad Request", "schema": {"$ref": "#/definitions/ErrorResponse"}},
+					"401": {"description": "Unauthorized", "schema": {"$ref": "#/definitions/ErrorResponse"}},
+					"403": {"description": "Forbidden", "schema": {"$ref": "#/definitions/ErrorResponse"}},
+					"404": {"description": "Not Found", "schema": {"$ref": "#/definitions/ErrorResponse"}}
+				}
+			}
 		}
     },
     "definitions": {
@@ -389,6 +408,31 @@ func swaggerJSONHandler(w http.ResponseWriter, r *http.Request) {
                 "name": {"type": "string"}
             }
         },
+        "EnrollmentRecord": {
+            "type": "object",
+            "properties": {
+                "_id": {"type": "string", "example": "60f7b2c9e1d3a4001f3e7a01"},
+                "student_id": {"type": "string", "example": "507f1f77bcf86cd799439011"},
+                "course_id": {"type": "string", "example": "C2001"},
+                "status": {"type": "string", "enum": ["active", "completed", "dropped"], "example": "active"},
+                "created_at": {"type": "string", "example": "2024-01-15T10:30:00Z"},
+                "updated_at": {"type": "string", "example": "2024-01-15T10:30:00Z"}
+            }
+        },
+        "StudentWithEnrollments": {
+            "type": "object",
+            "properties": {
+                "id": {"type": "string"},
+                "email": {"type": "string"},
+                "name": {"type": "string"},
+                "phone": {"type": "string"},
+                "enrollments": {
+                    "type": "array",
+                    "items": {"$ref": "#/definitions/EnrollmentRecord"}
+                },
+                "enrollment_count": {"type": "integer"}
+            }
+        },
         "ErrorResponse": {"type": "object", "properties": {"error": {"type": "string"}}}
     }
 }`, schemes)
@@ -414,7 +458,7 @@ func swaggerUIHandler(w http.ResponseWriter, r *http.Request) {
         <script>
             window.onload = function() {
 				const ui = SwaggerUIBundle({
-					url: window.location.origin + '/docs/swagger.yaml',
+					url: window.location.origin + '/swagger.json',
                     dom_id: '#swagger-ui',
                     deepLinking: true,
                     presets: [SwaggerUIBundle.presets.apis],
