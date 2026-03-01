@@ -10,6 +10,7 @@ A production-ready Go microservice for student management with comprehensive sec
 - [Quick Start](#quick-start)
 - [Configuration](#configuration)
 - [API Endpoints](#api-endpoints)
+- [Microservice Integration](#microservice-integration)
 - [Security](#security)
 - [Testing](#testing)
 - [Docker](#docker)
@@ -23,6 +24,7 @@ A production-ready Go microservice for student management with comprehensive sec
 - **Bcrypt Password Hashing** - Industry-standard password encryption
 - **Rate Limiting** - Brute force protection (5 login attempts/minute per IP)
 - **MongoDB Integration** - Persistent data storage with Atlas support
+- **Microservice Integration** - HTTP/REST calls to Enrollment Service for combined data
 - **Comprehensive Testing** - Unit tests, integration tests, and performance benchmarks
 - **Swagger Documentation** - Interactive API docs with security schemes
 - **CORS Support** - Cross-origin requests enabled
@@ -40,23 +42,27 @@ A production-ready Go microservice for student management with comprehensive sec
                    │
                    ▼
 ┌─────────────────────────────────────────────────┐
-│    Student Service (Port 5001)                 │
+│    Student Service (Port 5001)                  │
 ├─────────────────────────────────────────────────┤
 │ Routes:                                         │
-│  POST   /auth/register    → registerHandler    │
-│  POST   /auth/login       → loginHandler       │
-│  GET    /auth/validate    → validateHandler    │
-│  GET    /students/{id}    → studentsHandler    │
-│  PUT    /students/{id}    → studentsHandler    │
-│  DELETE /students/{id}    → studentsHandler    │
+│  POST   /auth/register           → registerH    │
+│  POST   /auth/login              → loginH       │
+│  GET    /auth/validate           → validateH    │
+│  GET    /students/{id}           → getStudent   │
+│  GET    /students/{id}/enrollments → M Call     │
+│  PUT    /students/{id}           → updateH      │
+│  DELETE /students/{id}           → deleteH      │
 └──────────────┬──────────────────────────────────┘
-               │
-               ▼
-        ┌────────────────┐
-        │  MongoDB       │
-        │  student_db    │
-        └────────────────┘
+               │                    │
+               ▼                    ▼ (HTTP call)
+        ┌────────────────┐   ┌────────────────────┐
+        │  MongoDB       │   │ Enrollment Service │
+        │  student_db    │   │  (Port 5003)       │
+        └────────────────┘   └────────────────────┘
 ```
+
+**Microservice Integration:** The Student Service calls the Enrollment Service via HTTP to fetch enrollments for the `/students/{id}/enrollments` endpoint.
+
 
 ## 📋 Requirements
 
@@ -131,6 +137,7 @@ go build -o student-service .
 | `SERVER_PORT` | `5001` | Service port |
 | `SERVER_ENV` | `development` | Environment (development/production) |
 | `JWT_SECRET` | Required | Secret for JWT signing (min 32 chars) |
+| `ENROLLMENT_SERVICE_URL` | `http://localhost:5003` | Enrollment Service URL for microservice integration |
 
 ### MongoDB Setup
 
@@ -248,6 +255,51 @@ Authorization: Bearer <token>
 Response: 204 No Content
 ```
 
+#### Get Student with Enrollments (Microservice Integration) 🔗
+```http
+GET /students/{id}/enrollments
+Authorization: Bearer <token>
+
+Response: 200 OK
+{
+  "id": "507f1f77bcf86cd799439011",
+  "email": "student@university.edu",
+  "name": "John Doe",
+  "phone": "1234567890",
+  "enrollments": [
+    {
+      "_id": "60f7b2c9e1d3a4001f3e7a01",
+      "student_id": "507f1f77bcf86cd799439011",
+      "course_id": "C2001",
+      "status": "active",
+      "created_at": "2024-01-15T10:30:00Z"
+    },
+    {
+      "_id": "60f7b2c9e1d3a4001f3e7a02",
+      "student_id": "507f1f77bcf86cd799439011",
+      "course_id": "C2002",
+      "status": "active",
+      "created_at": "2024-02-20T14:15:00Z"
+    }
+  ],
+  "enrollment_count": 2
+}
+```
+
+**Note:** This endpoint demonstrates microservice integration by calling the Enrollment Service to fetch student enrollments. See [INTEGRATION.md](INTEGRATION.md) for detailed integration documentation.
+
+## 🔗 Microservice Integration
+
+The Student Service integrates with the **Enrollment Service** to provide comprehensive student information including course enrollments.
+
+**Key Features:**
+- ✅ Synchronous HTTP/REST calls to Enrollment Service
+- ✅ Graceful degradation if Enrollment Service unavailable
+- ✅ Configurable service URL via `ENROLLMENT_SERVICE_URL` environment variable
+- ✅ 10-second timeout per request for reliability
+- ✅ Error logging for debugging
+
+
 ## 🔐 Security
 
 ### JWT (JSON Web Tokens)
@@ -355,6 +407,8 @@ student-service/
 ├── main.go              # Main application
 ├── jwt_util.go          # JWT utilities
 ├── rate_limiter.go      # Rate limiting implementation
+├── enrollment_client.go # Enrollment Service HTTP client
+├── INTEGRATION.md       # Microservice integration guide
 ├── .env.example         # Environment template
 ├── go.mod               # Go modules
 ├── Dockerfile           # Container configuration

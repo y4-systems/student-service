@@ -454,11 +454,18 @@ func objectIDToHex(id interface{}) string {
 // studentsHandler handles GET and PUT for /students/{id}
 func studentsHandler(w http.ResponseWriter, r *http.Request) {
 	// extract id from path /students/{id}
-	id := strings.TrimPrefix(r.URL.Path, "/students/")
+	path := r.URL.Path
+	id := strings.TrimPrefix(path, "/students/")
 	if id == "" {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(types.ErrorResponse{Error: "Missing student id"})
+		return
+	}
+
+	// Check if this is an enrollments request: /students/{id}/enrollments
+	if strings.Contains(id, "/enrollments") {
+		studentEnrollmentsHandler(w, r)
 		return
 	}
 
@@ -787,3 +794,116 @@ func validateHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(response)
 }
+
+// studentEnrollmentsHandler godoc
+// @Summary Get student enrollments
+// @Description Get all enrollments for a specific student by calling the Enrollment Service (microservice integration)
+// @Tags Students
+// @Security BearerAuth
+// @Produce json
+// @Param id path string true "Student ID" example:"507f1f77bcf86cd799439011"
+// @Success 200 {object} types.StudentWithEnrollments
+// @Failure 400 {object} types.ErrorResponse
+// @Failure 401 {object} types.ErrorResponse
+// @Failure 403 {object} types.ErrorResponse
+// @Failure 404 {object} types.ErrorResponse
+// @Failure 500 {object} types.ErrorResponse
+// @Router /students/{id}/enrollments [get]
+func studentEnrollmentsHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		json.NewEncoder(w).Encode(types.ErrorResponse{Error: "Method Not Allowed"})
+		return
+	}
+
+	// Extract student ID from path: /students/{id}/enrollments
+	path := r.URL.Path
+	parts := strings.Split(path, "/")
+	// Path format: /students/{id}/enrollments
+	// parts[0] = "", parts[1] = "students", parts[2] = {id}, parts[3] = "enrollments"
+	if len(parts) < 3 {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(types.ErrorResponse{Error: "Missing student id"})
+		return
+	}
+
+	studentID := parts[2]
+	if studentID == "" {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(types.ErrorResponse{Error: "Missing student id"})
+		return
+	}
+
+	// Validate student ID format
+	oid, err := primitive.ObjectIDFromHex(studentID)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(types.ErrorResponse{Error: "Invalid student id format"})
+		return
+	}
+
+	// Get student from MongoDB
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	collection := config.GetDB().Collection("students")
+	var student types.Student
+	err = collection.FindOne(ctx, bson.M{"_id": oid}).Decode(&student)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		json.NewEncoder(w).Encode(types.ErrorResponse{Error: "Student not found"})
+		return
+	}
+
+	// Call Enrollment Service to get student's enrollments
+	enrollmentClient := NewEnrollmentClient()
+	studentEnrollments, err := enrollmentClient.GetStudentEnrollments(studentID)
+	if err != nil {
+		fmt.Printf("Failed to fetch enrollments from Enrollment Service: %v\n", err)
+		// Return student data with empty enrollments list instead of failing
+		response := types.StudentWithEnrollments{
+			ID:              student.ID.Hex(),
+			Email:           student.Email,
+			Name:            student.Name,
+			Phone:           student.Phone,
+			Enrollments:     []types.EnrollmentRecord{},
+			EnrollmentCount: 0,
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	// Convert to response format
+	enrollmentRecords := make([]types.EnrollmentRecord, len(studentEnrollments.Enrollments))
+	for i, enrollment := range studentEnrollments.Enrollments {
+		enrollmentRecords[i] = types.EnrollmentRecord{
+			ID:        enrollment.ID,
+			StudentID: enrollment.StudentID,
+			CourseID:  enrollment.CourseID,
+			Status:    enrollment.Status,
+			CreatedAt: enrollment.CreatedAt.String(),
+			UpdatedAt: enrollment.UpdatedAt.String(),
+		}
+	}
+
+	response := types.StudentWithEnrollments{
+		ID:              student.ID.Hex(),
+		Email:           student.Email,
+		Name:            student.Name,
+		Phone:           student.Phone,
+		Enrollments:     enrollmentRecords,
+		EnrollmentCount: len(enrollmentRecords),
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(response)
+}
+

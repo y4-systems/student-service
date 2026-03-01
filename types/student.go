@@ -51,3 +51,23 @@ type Student struct {
 type ErrorResponse struct {
 	Error string `json:"error"`
 }
+
+// EnrollmentRecord represents an enrollment from the Enrollment Service
+type EnrollmentRecord struct {
+	ID        string `json:"_id"`
+	StudentID string `json:"student_id"`
+	CourseID  string `json:"course_id"`
+	Status    string `json:"status,omitempty"`
+	CreatedAt string `json:"created_at,omitempty"`
+	UpdatedAt string `json:"updated_at,omitempty"`
+}
+
+// StudentWithEnrollments represents a student with their cursor enrollments
+type StudentWithEnrollments struct {
+	ID          string              `json:"id"`
+	Email       string              `json:"email"`
+	Name        string              `json:"name"`
+	Phone       string              `json:"phone"`
+	Enrollments []EnrollmentRecord   `json:"enrollments"`
+	EnrollmentCount int              `json:"enrollment_count"`
+}
