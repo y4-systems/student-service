@@ -214,7 +214,7 @@ func swaggerJSONHandler(w http.ResponseWriter, r *http.Request) {
             "type": "apiKey",
             "name": "Authorization",
             "in": "header",
-            "description": "JWT Authorization header using the Bearer scheme"
+            "description": "Enter your JWT token (Bearer prefix will be added automatically)"
         }
     },
     "paths": {
@@ -474,6 +474,13 @@ func swaggerUIHandler(w http.ResponseWriter, r *http.Request) {
                     dom_id: '#swagger-ui',
                     deepLinking: true,
                     presets: [SwaggerUIBundle.presets.apis],
+                    requestInterceptor: (request) => {
+                        // Automatically prepend 'Bearer ' to Authorization header if not already present
+                        if (request.headers.Authorization && !request.headers.Authorization.startsWith('Bearer ')) {
+                            request.headers.Authorization = 'Bearer ' + request.headers.Authorization;
+                        }
+                        return request;
+                    }
                 })
                 window.ui = ui
             }
