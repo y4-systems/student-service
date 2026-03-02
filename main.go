@@ -79,8 +79,8 @@ func main() {
 
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/" {
-			w.Header().Set("Content-Type", "application/json")
-			fmt.Fprintf(w, `{"message": "Hello, World!"}`)
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+			fmt.Fprintf(w, `<html><body><h1>Student Service</h1><a href="/swagger/index.html">Open Swagger API Docs</a></body></html>`)
 		} else {
 			http.NotFound(w, r)
 		}
@@ -214,7 +214,7 @@ func swaggerJSONHandler(w http.ResponseWriter, r *http.Request) {
             "type": "apiKey",
             "name": "Authorization",
             "in": "header",
-            "description": "JWT Authorization header using the Bearer scheme"
+            "description": "Enter your JWT token (Bearer prefix will be added automatically)"
         }
     },
     "paths": {
@@ -474,6 +474,13 @@ func swaggerUIHandler(w http.ResponseWriter, r *http.Request) {
                     dom_id: '#swagger-ui',
                     deepLinking: true,
                     presets: [SwaggerUIBundle.presets.apis],
+                    requestInterceptor: (request) => {
+                        // Automatically prepend 'Bearer ' to Authorization header if not already present
+                        if (request.headers.Authorization && !request.headers.Authorization.startsWith('Bearer ')) {
+                            request.headers.Authorization = 'Bearer ' + request.headers.Authorization;
+                        }
+                        return request;
+                    }
                 })
                 window.ui = ui
             }
