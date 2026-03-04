@@ -973,8 +973,8 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // loginHandler godoc
-// @Summary Login a student
-// @Description Authenticate a student with email and password, return JWT token
+// @Summary Login
+// @Description Authenticate a USER with email and password, return JWT token
 // @Tags Auth
 // @Accept json
 // @Produce json

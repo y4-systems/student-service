@@ -455,7 +455,7 @@ API Gateway (returns to client)
 
 **Environment:**
 ```bash
-STUDENT_SERVICE_URL=http://localhost:5001
+USER_SERVICE_URL=http://localhost:5001
 ```
 
 
