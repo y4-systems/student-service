@@ -1,9 +1,9 @@
 #!/bin/bash
-# test_enrollment_connection.sh - Test enrollment service connection from student service
+# test_enrollment_connection.sh - Test enrollment service connection from user service
 
 echo "=============================================="
 echo "Enrollment Service Connection Test"
-echo "Student Service ↔ Enrollment Service (Cloud)"
+echo "User Service ↔ Enrollment Service (Cloud)"
 echo "=============================================="
 echo ""
 
@@ -52,14 +52,14 @@ info() {
 echo "📋 Step 1: Check Service Connectivity"
 echo "----------------------------------------------"
 
-# Check Student Service
-echo -n "Checking Student Service (localhost:5001)... "
+# Check User Service
+echo -n "Checking User Service (localhost:5001)... "
 if curl -s -f "$STUDENT_SERVICE/" > /dev/null 2>&1; then
     echo -e "${GREEN}✅${NC}"
-    pass "Student Service is running"
+    pass "User Service is running"
 else
     echo -e "${RED}❌${NC}"
-    fail "Student Service is not running"
+    fail "User Service is not running"
     exit 1
 fi
 
@@ -206,7 +206,7 @@ echo ""
 
 echo "🔍 Step 6: Connection Details"
 echo "----------------------------------------------"
-info "Student Service Configuration:"
+info "User Service Configuration:"
 echo "  - Base URL: $STUDENT_SERVICE"
 echo "  - Port: 5001"
 echo "  - Status: Running"
@@ -237,11 +237,11 @@ if [ $TESTS_FAILED -eq 0 ]; then
     echo -e "${GREEN}✅ All tests passed!${NC}"
     echo ""
     echo "🎯 Results:"
-    echo "  - Student Service ✅ Working"
+    echo "  - User Service ✅ Working"
     echo "  - Enrollment Service ✅ Reachable"
     echo "  - Microservice Integration ✅ Successful"
     echo ""
-    echo "The Student Service successfully connects to the Enrollment Service"
+    echo "The User Service successfully connects to the Enrollment Service"
     echo "at $ENROLLMENT_SERVICE_URL"
     exit 0
 else

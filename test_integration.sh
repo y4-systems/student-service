@@ -1,12 +1,12 @@
 #!/bin/bash
 # test_integration.sh - Test script for Student-Enrollment microservice integration
-# This script demonstrates how the Student Service calls the Enrollment Service
+# This script demonstrates how the User Service calls the Enrollment Service
 
 set -e  # Exit on errors
 
 echo "=============================================="
 echo "Microservice Integration Test"
-echo "Student Service ↔ Enrollment Service"
+echo "User Service ↔ Enrollment Service"
 echo "=============================================="
 echo ""
 
@@ -23,8 +23,8 @@ API_GATEWAY="http://localhost:8080"
 echo "📋 Prerequisites Check"
 echo "----------------------------------------------"
 
-# Check if Student Service is running
-echo -n "Checking Student Service (port 5001)... "
+# Check if User Service is running
+echo -n "Checking User Service (port 5001)... "
 if curl -s -f "$STUDENT_SERVICE/" > /dev/null 2>&1; then
     echo "✅ Running"
 else
@@ -180,13 +180,13 @@ echo "✅ Integration Test Complete!"
 echo "=============================================="
 echo ""
 echo "📋 Summary:"
-echo "   - Student Service: Working"
+echo "   - User Service: Working"
 echo "   - Enrollment Service: $([ -z "$ENROLLMENT_DOWN" ] && echo "Working" || echo "Down (graceful degradation tested)")"
 echo "   - Microservice Integration: ✅ Successful"
 echo "   - Student ID: $STUDENT_ID"
 echo "   - Enrollments: $ENROLLMENT_COUNT"
 echo ""
 echo "🔗 Integration demonstrated:"
-echo "   Student Service → HTTP Call → Enrollment Service"
+echo "   User Service → HTTP Call → Enrollment Service"
 echo "   Response combines data from both services"
 echo ""

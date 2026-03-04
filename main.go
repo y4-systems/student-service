@@ -21,7 +21,7 @@ import (
 	"golang.org/x/time/rate"
 )
 
-// @title Student Service API
+// @title User Service API
 // @version 1.0
 // @description A simple student management API with MongoDB
 // @BasePath /
