@@ -29,7 +29,7 @@ if curl -s -f "$STUDENT_SERVICE/" > /dev/null 2>&1; then
     echo "✅ Running"
 else
     echo "❌ Not running"
-    echo "Start with: cd /workspaces/student-service && go run main.go"
+    echo "Start with: cd /workspaces/user-service && go run main.go"
     exit 1
 fi
 

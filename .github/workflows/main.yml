@@ -7,7 +7,7 @@ on:
     branches: [main]
 
 env:
-  IMAGE_NAME: student-service
+  IMAGE_NAME: user-service
   GO_VERSION: "1.22"
 
 jobs:
@@ -100,7 +100,7 @@ jobs:
       - name: Deploy to Cloud Run
         uses: google-github-actions/deploy-cloudrun@v2
         with:
-          service: student-service
+          service: user-service
           region: us-central1
           image: docker.io/${{ secrets.DOCKER_USERNAME }}/${{ secrets.IMAGE_NAME }}:latest
           flags: --allow-unauthenticated --port=${{ secrets.SERVER_PORT }}
@@ -111,5 +111,5 @@ jobs:
 
       - name: Summary
         run: |
-          echo "✅ Deployment triggered for student-service"
+          echo "✅ Deployment triggered for user-service"
           echo "🐳 Image: ${{ secrets.DOCKER_USERNAME }}/${{ secrets.IMAGE_NAME }}:latest"
