@@ -13,13 +13,12 @@ import (
 	"reflect"
 
 	"github.com/joho/godotenv"
-	"github.com/y4-systems/student-service/config"
-	"github.com/y4-systems/student-service/types"
+	"github.com/y4-systems/user-service/config"
+	"github.com/y4-systems/user-service/types"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/time/rate"
-	_ "github.com/y4-systems/student-service/docs"
 )
 
 // @title Student Service API
@@ -417,7 +416,8 @@ func swaggerJSONHandler(w http.ResponseWriter, r *http.Request) {
             "properties": {
                 "id": {"type": "string"},
                 "email": {"type": "string"},
-                "name": {"type": "string"}
+                "name": {"type": "string"},
+                "role": {"type": "string"}
             }
         },
         "EnrollmentRecord": {
@@ -879,6 +879,7 @@ func validateHandler(w http.ResponseWriter, r *http.Request) {
 		ID:    claims.ID,
 		Email: claims.Email,
 		Name:  claims.Name,
+		Role:  claims.Role,
 	}
 
 	w.Header().Set("Content-Type", "application/json")

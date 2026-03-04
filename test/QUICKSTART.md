@@ -4,7 +4,7 @@
 
 ### 1. Run Unit Tests (Fastest)
 ```bash
-cd /workspaces/student-service
+cd /workspaces/user-service
 go test -v -short ./test
 ```
 
@@ -38,14 +38,14 @@ go test -bench=. -benchmem ./test
 ### Start the Service
 ```bash
 # Terminal 1
-cd /workspaces/student-service
+cd /workspaces/user-service
 go run main.go
 ```
 
 ### Run Demo (Go)
 ```bash
 # Terminal 2
-cd /workspaces/student-service
+cd /workspaces/user-service
 go run test/demo/rate_limiter_demo.go
 ```
 
@@ -80,7 +80,7 @@ go run test/demo/rate_limiter_demo.go
 === RUN   Test_GetIPAddress_Priority
 --- PASS: Test_GetIPAddress_Priority (0.00s)
 PASS
-ok      github.com/y4-systems/student-service/test      0.006s
+ok      github.com/y4-systems/user-service/test      0.006s
 ```
 
 

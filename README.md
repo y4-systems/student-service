@@ -76,7 +76,7 @@ A production-ready Go microservice for student management with comprehensive sec
 ### 1. Clone and Setup
 
 ```bash
-cd /workspaces/student-service
+cd /workspaces/user-service
 cp .env.example .env
 ```
 
@@ -112,12 +112,12 @@ go mod verify
 ### 4. Run the Service
 
 ```bash
-# Development mode (with auto-reload)
-go run main.go
+# Development mode
+go run .
 
 # Or build and run
-go build -o student-service .
-./student-service
+go build -o user-service .
+./user-service
 ```
 
 ### 5. Access Services
@@ -367,7 +367,7 @@ See [test/README.md](test/README.md) and [test/QUICKSTART.md](test/QUICKSTART.md
 
 ### Build Image
 ```bash
-docker build -t student-service:dev .
+docker build -t user-service:dev .
 ```
 
 ### Run Container
@@ -378,8 +378,8 @@ docker run -d \
   -e MONGODB_DB=usersdb \
   -e SERVER_PORT=5001 \
   -e JWT_SECRET='your-strong-secret' \
-  --name student-service \
-  student-service:dev
+  --name user-service \
+  user-service:dev
 ```
 
 ### With Docker Compose
@@ -391,7 +391,7 @@ docker-compose up -d
 
 ### Project Structure
 ```
-student-service/
+user-service/
 ├── config/              # MongoDB configuration
 │   └── database.go
 ├── types/               # Data type definitions

@@ -65,11 +65,11 @@ ok      test    1.234s
 ```bash
 # Make sure the service is running first!
 # In one terminal:
-cd /workspaces/student-service
+cd /workspaces/user-service
 go run main.go
 
 # In another terminal:
-cd /workspaces/student-service/test
+cd /workspaces/user-service/test
 go run demo/rate_limiter_demo.go
 
 # Or with custom URL:
@@ -181,7 +181,7 @@ This means:
 ### Problem: "Connection refused"
 **Solution:** Make sure the Student Service is running
 ```bash
-cd /workspaces/student-service
+cd /workspaces/user-service
 go run main.go
 ```
 
