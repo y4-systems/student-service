@@ -1235,7 +1235,7 @@ func studentEnrollmentsHandler(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(types.ErrorResponse{Error: "Student not found"})
 		return
 	}
-
+//comment
 	// Call Enrollment Service to get student's enrollments
 	enrollmentClient := NewEnrollmentClient()
 	studentEnrollments, err := enrollmentClient.GetStudentEnrollments(studentID)
